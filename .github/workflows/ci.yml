@@ -1,0 +1,28 @@
+name: Validate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Terraform format
+        working-directory: ./terraform
+        run : |
+          terraform fmt -check -recursive
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+      - name: Execute tests
+        working-directory: ./app
+        run: |
+          go test -v

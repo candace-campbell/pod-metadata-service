@@ -1,0 +1,41 @@
+name: Build and Push Image
+
+on: 
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-push-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: arn:aws:iam::632823263537:role/github-workflow
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build Image
+        run: |
+          docker build -t pod-metadata-display .
+      - name: Tag Image
+        env: 
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: pod-metadata-display
+        run: |
+          docker tag pod-metadata-display $REGISTRY/$REPOSITORY:latest
+          docker tag pod-metadata-display  $REGISTRY/$REPOSITORY:${{ github.sha }}
+      - name: Push Image to ECR
+        env: 
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: pod-metadata-display
+        run: |
+          docker push --all-tags $REGISTRY/$REPOSITORY
